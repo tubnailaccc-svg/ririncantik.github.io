@@ -144,6 +144,15 @@
         .btn-danger:hover {
             background: #a93226;
         }
+        .btn-refresh {
+            background: #6c757d;
+            color: white;
+            font-size: 12px;
+            padding: 6px 16px;
+        }
+        .btn-refresh:hover {
+            background: #5a6268;
+        }
 
         .toolbar {
             display: flex;
@@ -332,6 +341,7 @@
             text-decoration: underline;
         }
 
+        /* ===== MODAL NOTIFIKASI (BARU) ===== */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -351,8 +361,10 @@
             background: white;
             padding: 30px 35px;
             border-radius: 16px;
-            max-width: 550px;
+            max-width: 600px;
             width: 95%;
+            max-height: 90vh;
+            overflow-y: auto;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             animation: modalFade 0.3s ease;
         }
@@ -378,8 +390,11 @@
         }
         .modal-box .options {
             margin: 16px 0;
-            max-height: 250px;
+            max-height: 300px;
             overflow-y: auto;
+            border: 1px solid #e2eaf2;
+            border-radius: 8px;
+            padding: 8px 12px;
         }
         .modal-box .options label {
             display: flex;
@@ -387,7 +402,7 @@
             gap: 10px;
             padding: 8px 12px;
             border-radius: 8px;
-            border: 1.5px solid #e2eaf2;
+            border: 1px solid #e2eaf2;
             margin-bottom: 6px;
             cursor: pointer;
             transition: 0.2s;
@@ -400,7 +415,7 @@
             background: #e3effa;
             border-color: #1a5f9e;
         }
-        .modal-box .options label input[type="radio"] {
+        .modal-box .options label input[type="checkbox"] {
             width: 18px;
             height: 18px;
             accent-color: #1a5f9e;
@@ -477,6 +492,11 @@
         .modal-box .btn-group .btn-modal-success:hover {
             background: #14633b;
         }
+        .modal-box .item-detail {
+            font-size: 12px;
+            color: #7a8a9e;
+            margin-left: 28px;
+        }
         @media (max-width: 500px) {
             .modal-box {
                 padding: 20px;
@@ -487,10 +507,40 @@
             .modal-box .options label {
                 flex-wrap: wrap;
             }
-            .modal-box .options label .role-select {
-                margin-left: 0;
-                width: 100%;
-            }
+        }
+
+        /* ===== MODAL NOTIFIKASI (KHUSUS) ===== */
+        .modal-notif .modal-box {
+            max-width: 550px;
+        }
+        .modal-notif .modal-box .notif-list {
+            margin: 12px 0;
+            max-height: 250px;
+            overflow-y: auto;
+            border: 1px solid #e2eaf2;
+            border-radius: 8px;
+            padding: 8px 12px;
+        }
+        .modal-notif .modal-box .notif-item {
+            padding: 6px 0;
+            border-bottom: 1px solid #f0f4f8;
+            font-size: 13px;
+        }
+        .modal-notif .modal-box .notif-item:last-child {
+            border-bottom: none;
+        }
+        .modal-notif .modal-box .notif-item .check {
+            color: #1f7b4d;
+        }
+        .modal-notif .modal-box .notif-item .cross {
+            color: #c0392b;
+        }
+        .modal-notif .modal-box .notif-footer {
+            font-size: 13px;
+            color: #7a8a9e;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #e2eaf2;
         }
 
         .edit-modal .modal-box {
@@ -701,6 +751,7 @@
             <input type="file" id="fileInput" accept=".xls,.xlsx" />
             <button class="btn btn-primary" id="prosesBtn">▶ Proses</button>
             <button class="btn btn-reset" id="resetBtn">↺ Reset</button>
+            <button class="btn btn-refresh" id="refreshDataBtn">🔄 Refresh Data Karyawan</button>
         </div>
 
         <div id="statusMsg" class="status-msg hidden"></div>
@@ -771,12 +822,27 @@
             <strong>Karyawan:</strong> <span id="modalNama">-</span><br />
             <strong>Tanggal :</strong> <span id="modalTgl">-</span>
         </div>
-        <p style="margin: 6px 0 10px 0; font-size:14px; color:#4a5a6e;">Pilih data dan tentukan sebagai MASUK atau KELUAR:</p>
         <div class="options" id="modalOptions"></div>
         <div class="btn-group">
-            <button class="btn-modal btn-modal-success" id="modalConfirm">✅ Pakai yang dipilih</button>
-            <button class="btn-modal btn-modal-secondary" id="modalSkip">⏭️ Lewati</button>
-            <button class="btn-modal btn-modal-danger" id="modalCancel">❌ Batal</button>
+            <button class="btn-modal btn-modal-success" id="modalConfirm">✅ Simpan & Lanjutkan</button>
+            <button class="btn-modal btn-modal-secondary" id="modalSkip">⏭️ Lewati Semua</button>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== MODAL NOTIFIKASI ==================== -->
+<div class="modal-overlay modal-notif" id="modalNotif">
+    <div class="modal-box">
+        <h2>⚠️ Data Absen Tidak Lengkap!</h2>
+        <div class="info" style="margin-bottom: 8px;">
+            Ada <span id="notifTotal">0</span> data absen yang tidak lengkap:
+        </div>
+        <div class="notif-list" id="notifList"></div>
+        <div class="notif-footer">
+            💡 Data yang tidak lengkap akan ditampilkan sebagai "<strong>-</strong>".
+        </div>
+        <div class="btn-group">
+            <button class="btn-modal btn-modal-success" id="notifOk">✅ OK</button>
         </div>
     </div>
 </div>
@@ -821,6 +887,7 @@
         const resetBtn = document.getElementById('resetBtn');
         const copyBtn = document.getElementById('copyBtn');
         const resetEditBtn = document.getElementById('resetEditBtn');
+        const refreshDataBtn = document.getElementById('refreshDataBtn');
         const statusMsg = document.getElementById('statusMsg');
         const resultArea = document.getElementById('resultArea');
         const tableWrapper = document.getElementById('tableWrapper');
@@ -834,7 +901,11 @@
         const modalOptions = document.getElementById('modalOptions');
         const modalConfirm = document.getElementById('modalConfirm');
         const modalSkip = document.getElementById('modalSkip');
-        const modalCancel = document.getElementById('modalCancel');
+
+        const modalNotif = document.getElementById('modalNotif');
+        const notifTotal = document.getElementById('notifTotal');
+        const notifList = document.getElementById('notifList');
+        const notifOk = document.getElementById('notifOk');
 
         const editModal = document.getElementById('editModal');
         const editTitle = document.getElementById('editTitle');
@@ -850,6 +921,82 @@
         let pendingResolve = null;
         let currentEditData = null;
         let originalData = null;
+
+        // ============================================================
+        // DATA KARYAWAN (CACHE + LOAD)
+        // ============================================================
+        let daftarKaryawan = [];
+
+        async function loadKaryawan() {
+            const cached = localStorage.getItem('dataKaryawan');
+            if (cached) {
+                try {
+                    const parsed = JSON.parse(cached);
+                    if (parsed && parsed.length > 0) {
+                        daftarKaryawan = parsed;
+                        renderKaryawanList(daftarKaryawan);
+                        return;
+                    }
+                } catch (e) {}
+            }
+
+            try {
+                const resp = await fetch(WEB_APP_URL);
+                const data = await resp.json();
+                if (data.karyawan && data.karyawan.success) {
+                    daftarKaryawan = data.karyawan.data || [];
+                    localStorage.setItem('dataKaryawan', JSON.stringify(daftarKaryawan));
+                } else {
+                    daftarKaryawan = [];
+                }
+            } catch (e) {
+                console.error('Gagal load karyawan:', e);
+                daftarKaryawan = [];
+            }
+            renderKaryawanList(daftarKaryawan);
+        }
+
+        function refreshKaryawan() {
+            localStorage.removeItem('dataKaryawan');
+            loadKaryawan();
+            showStatus('🔄 Data karyawan di-refresh!', false);
+        }
+
+        refreshDataBtn.addEventListener('click', refreshKaryawan);
+
+        // ============================================================
+        // FUNGSI COCOKKAN NAMA & JADWAL
+        // ============================================================
+        function cocokkanNama(namaAlat) {
+            if (!daftarKaryawan || daftarKaryawan.length === 0) return null;
+            return daftarKaryawan.find(k => k.namaAlat.toLowerCase() === namaAlat.toLowerCase()) || null;
+        }
+
+        function getJadwalKaryawan(namaAlat) {
+            const match = cocokkanNama(namaAlat);
+            if (!match) return null;
+            return {
+                jamMasuk: match.jamMasuk,
+                jamPulang: match.jamPulang,
+                jamMasuk2: match.jamMasuk2 || null,
+                jamPulang2: match.jamPulang2 || null
+            };
+        }
+
+        function cekSesuaiJadwal(jam, jadwalList) {
+            if (!jam || !jadwalList || jadwalList.length === 0) return null;
+            const jamAngka = parseInt(jam.split(':')[0]);
+            if (isNaN(jamAngka)) return null;
+            for (const j of jadwalList) {
+                if (!j) continue;
+                const jAngka = parseInt(j.split(':')[0]);
+                if (isNaN(jAngka)) continue;
+                if (jamAngka === jAngka) return true;
+                // Selisih 1 jam masih dianggap sesuai
+                if (Math.abs(jamAngka - jAngka) <= 1) return true;
+            }
+            return false;
+        }
 
         // ============================================================
         // TABS
@@ -901,7 +1048,7 @@
                 const idxNama = headers.indexOf('Nama');
                 const idxStatus = headers.indexOf('Status');
                 const idxCatatan = headers.indexOf('Catatan');
-                const idxLink = headers.indexOf('Link Bukti'); // <--- BARU
+                const idxLink = headers.indexOf('Link Bukti');
 
                 const bulanSekarang = new Date().getMonth() + 1;
                 const tahunSekarang = new Date().getFullYear();
@@ -1010,36 +1157,70 @@
                     pendingResolve = null;
                 }
             }
+            if (modalNotif.classList.contains('active')) {
+                modalNotif.classList.remove('active');
+            }
             if (editModal.classList.contains('active')) {
                 editModal.classList.remove('active');
             }
         }
 
         // ============================================================
-        // MODAL KONFIRMASI
+        // MODAL NOTIFIKASI (DATA TIDAK LENGKAP)
         // ============================================================
-        function showModalWithRoles(nama, tgl, items, title) {
+        function showModalNotif(notifListData) {
             return new Promise((resolve) => {
-                document.querySelector('.modal-box h2').textContent = title || '⚠️ Perlu Konfirmasi';
+                notifTotal.textContent = notifListData.length;
+                notifList.innerHTML = '';
+                notifListData.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'notif-item';
+                    const checkIn = item.inJam ? `<span class="check">✅ C/Masuk ${item.inJam}</span>` :
+                        `<span class="cross">❌ Belum ada C/Masuk</span>`;
+                    const checkOut = item.outJam ? `<span class="check">✅ C/Keluar ${item.outJam}</span>` :
+                        `<span class="cross">❌ Belum ada C/Keluar</span>`;
+                    div.innerHTML = `<strong>${item.nama}</strong> - ${item.tanggal}<br>
+                        ${checkIn} | ${checkOut}`;
+                    notifList.appendChild(div);
+                });
+
+                const okBtn = notifOk.cloneNode(true);
+                notifOk.parentNode.replaceChild(okBtn, notifOk);
+                okBtn.addEventListener('click', function() {
+                    modalNotif.classList.remove('active');
+                    resolve(true);
+                });
+
+                modalNotif.classList.add('active');
+            });
+        }
+
+        // ============================================================
+        // MODAL KONFIRMASI (UNTUK ANOMALI)
+        // ============================================================
+        function showModalAnomali(nama, tgl, items, title) {
+            return new Promise((resolve) => {
+                document.querySelector('.modal-box h2').textContent = title || '⚠️ Konfirmasi Data Absen';
                 modalNama.textContent = nama;
                 modalTgl.textContent = tgl;
+
+                const instruksi = document.createElement('p');
+                instruksi.style.cssText = 'margin: 6px 0 10px 0; font-size:14px; color:#4a5a6e;';
+                instruksi.innerHTML = '📌 Centang <strong>1 data</strong> sebagai MASUK dan <strong>1 data</strong> sebagai KELUAR.';
+                const oldInstruksi = document.querySelector('.modal-box .info + p');
+                if (oldInstruksi) oldInstruksi.remove();
+                document.querySelector('.modal-box .info').after(instruksi);
 
                 modalOptions.innerHTML = '';
                 items.forEach((item, idx) => {
                     const label = document.createElement('label');
-                    const radio = document.createElement('input');
-                    radio.type = 'radio';
-                    radio.name = 'modalChoice';
-                    radio.value = idx;
-                    if (idx === 0) radio.checked = true;
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.className = 'anomali-checkbox';
+                    checkbox.dataset.idx = idx;
 
-                    const timeSpan = document.createElement('span');
-                    timeSpan.className = 'time-badge';
-                    timeSpan.textContent = item.time;
-
-                    const statusSpan = document.createElement('span');
-                    statusSpan.className = 'status-badge';
-                    statusSpan.textContent = item.originalStatus || '';
+                    const textSpan = document.createElement('span');
+                    textSpan.innerHTML = `<strong>${item.waktu}</strong> (${item.status})`;
 
                     const select = document.createElement('select');
                     select.className = 'role-select';
@@ -1050,90 +1231,86 @@
                     const optOut = document.createElement('option');
                     optOut.value = 'out';
                     optOut.textContent = '→ Keluar';
-
-                    const jam = parseInt(item.time.split(':')[0]);
+                    const jam = parseInt(item.waktu.split(':')[0]);
                     if (jam <= 12) {
                         optIn.selected = true;
                     } else {
                         optOut.selected = true;
                     }
-
                     select.appendChild(optIn);
                     select.appendChild(optOut);
 
-                    label.appendChild(radio);
-                    label.appendChild(timeSpan);
-                    label.appendChild(statusSpan);
+                    label.appendChild(checkbox);
+                    label.appendChild(textSpan);
                     label.appendChild(select);
 
                     label.addEventListener('click', function(e) {
-                        if (e.target.tagName === 'SELECT') return;
-                        const r = this.querySelector('input[type="radio"]');
-                        if (r) {
-                            r.checked = true;
-                            document.querySelectorAll('.modal-box .options label').forEach(l => l
-                                .classList.remove('selected'));
-                            this.classList.add('selected');
-                        }
-                    });
-
-                    select.addEventListener('click', function(e) {
-                        e.stopPropagation();
+                        if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+                        const cb = this.querySelector('input[type="checkbox"]');
+                        cb.checked = !cb.checked;
                     });
 
                     modalOptions.appendChild(label);
                 });
 
-                const firstLabel = modalOptions.querySelector('label');
-                if (firstLabel) firstLabel.classList.add('selected');
+                const confirmHandler = function() {
+                    const checkboxes = modalOptions.querySelectorAll('.anomali-checkbox');
+                    const selectedData = [];
+                    let countIn = 0;
+                    let countOut = 0;
 
-                pendingResolve = resolve;
-                modalOverlay.classList.add('active');
-            });
-        }
-
-        function showModalSimple(nama, tgl, options, title) {
-            return new Promise((resolve) => {
-                document.querySelector('.modal-box h2').textContent = title || '⚠️ Perlu Konfirmasi';
-                modalNama.textContent = nama;
-                modalTgl.textContent = tgl;
-
-                modalOptions.innerHTML = '';
-                options.forEach((opt, idx) => {
-                    const label = document.createElement('label');
-                    const radio = document.createElement('input');
-                    radio.type = 'radio';
-                    radio.name = 'modalChoice';
-                    radio.value = idx;
-                    if (idx === 0) radio.checked = true;
-
-                    const span = document.createElement('span');
-                    span.className = 'time-badge';
-                    span.textContent = opt.label;
-
-                    const badge = document.createElement('span');
-                    badge.className = 'status-badge';
-                    badge.textContent = opt.sub || '';
-
-                    label.appendChild(radio);
-                    label.appendChild(span);
-                    label.appendChild(badge);
-
-                    label.addEventListener('click', function(e) {
-                        const r = this.querySelector('input[type="radio"]');
-                        if (r) {
-                            r.checked = true;
-                            document.querySelectorAll('.modal-box .options label').forEach(l => l
-                                .classList.remove('selected'));
-                            this.classList.add('selected');
+                    checkboxes.forEach((cb, idx) => {
+                        if (cb.checked) {
+                            const select = modalOptions.querySelectorAll('.role-select')[idx];
+                            const role = select.value;
+                            const waktu = items[idx].waktu;
+                            selectedData.push({ waktu, role });
+                            if (role === 'in') countIn++;
+                            else if (role === 'out') countOut++;
                         }
                     });
 
-                    modalOptions.appendChild(label);
-                });
+                    if (selectedData.length === 0) {
+                        alert('⚠️ Pilih minimal 1 data sebagai MASUK dan 1 data sebagai KELUAR.');
+                        return;
+                    }
+                    if (countIn === 0) {
+                        alert('⚠️ Tidak ada data yang dipilih sebagai MASUK. Centang 1 data dan pilih "→ Masuk".');
+                        return;
+                    }
+                    if (countOut === 0) {
+                        alert('⚠️ Tidak ada data yang dipilih sebagai KELUAR. Centang 1 data dan pilih "→ Keluar".');
+                        return;
+                    }
+                    if (countIn > 1) {
+                        alert('⚠️ Hanya boleh memilih 1 data sebagai MASUK. Silakan periksa kembali.');
+                        return;
+                    }
+                    if (countOut > 1) {
+                        alert('⚠️ Hanya boleh memilih 1 data sebagai KELUAR. Silakan periksa kembali.');
+                        return;
+                    }
 
-                const firstLabel = modalOptions.querySelector('label');
-                if (firstLabel) firstLabel.classList.add('selected');
+                    const inData = selectedData.find(d => d.role === 'in');
+                    const outData = selectedData.find(d => d.role === 'out');
+                    closeModal({
+                        in: inData ? inData.waktu : null,
+                        out: outData ? outData.waktu : null
+                    });
+                };
+
+                const confirmBtn = document.getElementById('modalConfirm');
+                const skipBtn = document.getElementById('modalSkip');
+
+                const newConfirm = confirmBtn.cloneNode(true);
+                const newSkip = skipBtn.cloneNode(true);
+                confirmBtn.parentNode.replaceChild(newConfirm, confirmBtn);
+                skipBtn.parentNode.replaceChild(newSkip, skipBtn);
+
+                newConfirm.addEventListener('click', confirmHandler);
+                newSkip.addEventListener('click', function() {
+                    closeModal('__SKIP__');
+                });
 
                 pendingResolve = resolve;
                 modalOverlay.classList.add('active');
@@ -1147,35 +1324,6 @@
                 pendingResolve = null;
             }
         }
-
-        modalConfirm.addEventListener('click', function() {
-            const selected = document.querySelector('input[name="modalChoice"]:checked');
-            if (selected) {
-                const idx = parseInt(selected.value);
-                const labels = modalOptions.querySelectorAll('label');
-                if (labels[idx]) {
-                    const timeText = labels[idx].querySelector('.time-badge')?.textContent || '';
-                    const select = labels[idx].querySelector('.role-select');
-                    let role = 'in';
-                    if (select) {
-                        role = select.value;
-                    }
-                    closeModal({ time: timeText, role: role });
-                } else {
-                    closeModal(null);
-                }
-            } else {
-                closeModal(null);
-            }
-        });
-
-        modalSkip.addEventListener('click', function() {
-            closeModal('__SKIP__');
-        });
-
-        modalCancel.addEventListener('click', function() {
-            closeModal('__CANCEL__');
-        });
 
         // ============================================================
         // MODAL EDIT
@@ -1288,7 +1436,7 @@
         });
 
         // ============================================================
-        // FORMAT JAM
+        // FUNGSI BANTU
         // ============================================================
         function formatJam(jam) {
             if (!jam) return null;
@@ -1339,13 +1487,43 @@
                 return null;
             }
 
+            // ===== COCOKKAN NAMA =====
+            const namaAlatSet = new Set();
+            for (let i = 1; i < rows.length; i++) {
+                const row = rows[i];
+                if (!row || row.length === 0) continue;
+                const nama = String(row[idxNama] || '').trim();
+                if (nama && nama !== '' && nama !== 'Departemen') {
+                    namaAlatSet.add(nama);
+                }
+            }
+
+            const namaTidakDitemukan = [];
+            for (const namaAlat of namaAlatSet) {
+                const match = cocokkanNama(namaAlat);
+                if (!match) {
+                    namaTidakDitemukan.push(namaAlat);
+                }
+            }
+
+            if (namaTidakDitemukan.length > 0) {
+                const pesan = `⚠️ Nama karyawan berikut tidak ditemukan di sheet "Data Karyawan":\n\n${namaTidakDitemukan.join('\n')}\n\nSilakan tambahkan data karyawan di Google Sheets terlebih dahulu.`;
+                showStatus(`❌ ${namaTidakDitemukan.length} nama tidak ditemukan!`, true);
+                alert(pesan);
+                return null;
+            }
+
+            // ===== KUMPULKAN DATA PER KARYAWAN PER TANGGAL =====
             const empMap = new Map();
 
             for (let i = 1; i < rows.length; i++) {
                 const row = rows[i];
                 if (!row || row.length === 0) continue;
-                const nama = String(row[idxNama] || '').trim();
-                if (!nama || nama === '' || nama === 'Departemen') continue;
+                const namaAlat = String(row[idxNama] || '').trim();
+                if (!namaAlat || namaAlat === '' || namaAlat === 'Departemen') continue;
+
+                const match = cocokkanNama(namaAlat);
+                const namaSebenarnya = match ? match.namaSebenarnya : namaAlat;
 
                 const tglWaktu = String(row[idxTgl] || '').trim();
                 if (!tglWaktu) continue;
@@ -1361,26 +1539,23 @@
                     id = String(row[idxId]).trim();
                 }
 
-                const key = nama + '|' + id;
+                const key = namaSebenarnya + '|' + id;
 
                 if (!empMap.has(key)) {
                     empMap.set(key, {
-                        nama: nama,
+                        nama: namaSebenarnya,
+                        namaAlat: namaAlat,
                         id: id,
+                        jadwal: match,
                         data: {}
                     });
                 }
                 const emp = empMap.get(key);
 
                 if (!emp.data[tgl]) {
-                    emp.data[tgl] = { masuk: [], keluar: [] };
+                    emp.data[tgl] = [];
                 }
-
-                if (status.includes('Masuk')) {
-                    emp.data[tgl].masuk.push(jam);
-                } else if (status.includes('Keluar')) {
-                    emp.data[tgl].keluar.push(jam);
-                }
+                emp.data[tgl].push({ waktu: jam, status: status });
             }
 
             if (empMap.size === 0) {
@@ -1388,134 +1563,95 @@
                 return null;
             }
 
+            // ===== PROSES PER KARYAWAN PER TANGGAL =====
             const result = [];
             const allDates = new Set();
+            const notifListData = [];
 
             for (const [key, emp] of empMap) {
                 const rowData = {
                     nama: emp.nama,
+                    namaAlat: emp.namaAlat,
                     id: emp.id,
                     dates: {}
                 };
 
-                for (const [tgl, logs] of Object.entries(emp.data)) {
-                    allDates.add(tgl);
+                const semuaTanggal = Object.keys(emp.data).sort();
+                if (semuaTanggal.length === 0) continue;
 
-                    let masuk = [...logs.masuk];
-                    let keluar = [...logs.keluar];
+                for (const tgl of semuaTanggal) {
+                    const dataList = emp.data[tgl] || [];
+                    const items = dataList.map(d => ({ waktu: d.waktu, status: d.status }));
+
+                    const masukItems = items.filter(d => d.status.includes('Masuk'));
+                    const keluarItems = items.filter(d => d.status.includes('Keluar'));
 
                     let inTime = null;
                     let outTime = null;
 
-                    if (masuk.length > 0) {
-                        const sortedIn = masuk.slice().sort();
-                        if (sortedIn.length > 1) {
-                            const options = sortedIn.map((j) => ({
-                                label: j,
-                                sub: 'C/Masuk'
-                            }));
-                            const pilihan = await showModalSimple(
-                                emp.nama,
-                                tgl,
-                                options,
-                                '⚠️ Pilih Jam Masuk (C/Masuk Ganda)'
-                            );
+                    // Kalo ADA Masuk DAN ADA Keluar → langsung proses
+                    if (masukItems.length > 0 && keluarItems.length > 0) {
+                        const sortedIn = masukItems.map(d => d.waktu).sort();
+                        inTime = sortedIn[0];
+                        const sortedOut = keluarItems.map(d => d.waktu).sort();
+                        outTime = sortedOut[sortedOut.length - 1];
+                    }
+                    // Kalo cuma ada MASUK doang (ga ada KELUAR)
+                    else if (masukItems.length > 0 && keluarItems.length === 0) {
+                        const sortedIn = masukItems.map(d => d.waktu).sort();
+                        inTime = sortedIn[0];
+                        outTime = null;
 
-                            if (pilihan === '__SKIP__' || pilihan === '__CANCEL__' || pilihan === null) {
-                                inTime = null;
-                            } else {
-                                inTime = pilihan;
-                            }
-                        } else {
-                            inTime = sortedIn[0];
-                        }
+                        // Cek apakah jam masuk sesuai jadwal
+                        const jadwalList = [];
+                        if (emp.jadwal && emp.jadwal.jamMasuk) jadwalList.push(emp.jadwal.jamMasuk);
+                        if (emp.jadwal && emp.jadwal.jamMasuk2) jadwalList.push(emp.jadwal.jamMasuk2);
+                        const inSesuai = cekSesuaiJadwal(inTime, jadwalList);
+
+                        notifListData.push({
+                            nama: emp.nama,
+                            tanggal: tgl,
+                            inJam: inTime + (inSesuai ? ' ✅' : ' ⚠️'),
+                            outJam: null
+                        });
+                    }
+                    // Kalo cuma ada KELUAR doang (ga ada MASUK)
+                    else if (masukItems.length === 0 && keluarItems.length > 0) {
+                        const sortedOut = keluarItems.map(d => d.waktu).sort();
+                        outTime = sortedOut[sortedOut.length - 1];
+                        inTime = null;
+
+                        const jadwalPulangList = [];
+                        if (emp.jadwal && emp.jadwal.jamPulang) jadwalPulangList.push(emp.jadwal.jamPulang);
+                        if (emp.jadwal && emp.jadwal.jamPulang2) jadwalPulangList.push(emp.jadwal.jamPulang2);
+                        const outSesuai = cekSesuaiJadwal(outTime, jadwalPulangList);
+
+                        notifListData.push({
+                            nama: emp.nama,
+                            tanggal: tgl,
+                            inJam: null,
+                            outJam: outTime + (outSesuai ? ' ✅' : ' ⚠️')
+                        });
+                    }
+                    // Kalo ga ada data sama sekali
+                    else {
+                        inTime = null;
+                        outTime = null;
                     }
 
-                    if (masuk.length === 0 && keluar.length > 0) {
-                        const items = keluar.map((j) => ({
-                            time: j,
-                            originalStatus: 'C/Keluar'
-                        }));
-
-                        const pilihan = await showModalWithRoles(
-                            emp.nama,
-                            tgl,
-                            items,
-                            '⚠️ Tidak ada C/Masuk! Tentukan status tiap jam:'
-                        );
-
-                        if (pilihan === '__SKIP__' || pilihan === '__CANCEL__' || pilihan === null) {
-                            inTime = null;
-                            outTime = null;
-                        } else {
-                            if (pilihan.role === 'in') {
-                                inTime = pilihan.time;
-                            } else {
-                                outTime = pilihan.time;
-                            }
-                            keluar = keluar.filter(j => j !== pilihan.time);
-                        }
-                    }
-
-                    if (inTime !== null) {
-                        if (keluar.length > 0) {
-                            const sortedOut = keluar.slice().sort();
-                            if (sortedOut.length > 1) {
-                                const options = sortedOut.map((j) => ({
-                                    label: j,
-                                    sub: 'C/Keluar'
-                                }));
-                                const pilihan = await showModalSimple(
-                                    emp.nama,
-                                    tgl,
-                                    options,
-                                    '⚠️ Pilih Jam Keluar (C/Keluar Ganda)'
-                                );
-
-                                if (pilihan === '__SKIP__' || pilihan === '__CANCEL__' || pilihan === null) {
-                                    outTime = null;
-                                } else {
-                                    outTime = pilihan;
-                                }
-                            } else {
-                                outTime = sortedOut[0];
-                            }
-                        }
-
-                        if (outTime === null && masuk.length > 0) {
-                            const masukSore = masuk.filter(j => {
-                                const jam = parseInt(j.split(':')[0]);
-                                return jam >= 12;
-                            });
-
-                            if (masukSore.length > 0) {
-                                const options = masukSore.map((j) => ({
-                                    label: j,
-                                    sub: 'C/Masuk (sore) → dijadikan Keluar?'
-                                }));
-                                const pilihan = await showModalSimple(
-                                    emp.nama,
-                                    tgl,
-                                    options,
-                                    '⚠️ Tidak ada C/Keluar, gunakan C/Masuk sore?'
-                                );
-
-                                if (pilihan === '__SKIP__' || pilihan === '__CANCEL__' || pilihan === null) {
-                                    outTime = null;
-                                } else {
-                                    outTime = pilihan;
-                                }
-                            }
-                        }
-                    }
-
-                    const inFormatted = formatJam(inTime);
-                    const outFormatted = formatJam(outTime);
-
-                    rowData.dates[tgl] = { in: inFormatted, out: outFormatted };
+                    rowData.dates[tgl] = {
+                        in: inTime ? formatJam(inTime) : null,
+                        out: outTime ? formatJam(outTime) : null
+                    };
+                    allDates.add(tgl);
                 }
 
                 result.push(rowData);
+            }
+
+            // ===== TAMPILKAN NOTIFIKASI KALO ADA DATA TIDAK LENGKAP =====
+            if (notifListData.length > 0) {
+                await showModalNotif(notifListData);
             }
 
             const sortedDates = Array.from(allDates).sort((a, b) => {
@@ -1724,7 +1860,6 @@
         const resetCatatan = document.getElementById('resetCatatan');
         const catatanStatusMsg = document.getElementById('catatanStatusMsg');
 
-        let daftarKaryawan = [];
         let selectedKaryawan = null;
         let selectedStatus = null;
 
@@ -1744,56 +1879,26 @@
                 karyawanList.innerHTML = '<div class="item text-muted">Tidak ada karyawan</div>';
                 return;
             }
-            list.forEach(nama => {
+            list.forEach(item => {
                 const div = document.createElement('div');
                 div.className = 'item';
-                div.textContent = nama;
-                div.dataset.nama = nama;
-                if (selectedKaryawan === nama) div.classList.add('selected');
+                div.textContent = item.namaSebenarnya || item.namaAlat;
+                div.dataset.nama = item.namaSebenarnya || item.namaAlat;
+                if (selectedKaryawan === (item.namaSebenarnya || item.namaAlat)) div.classList.add('selected');
                 div.addEventListener('click', function() {
                     selectedKaryawan = this.dataset.nama;
                     searchKaryawan.value = selectedKaryawan;
-                    renderKaryawanList(daftarKaryawan);
+                    renderKaryawanList(list);
                 });
                 karyawanList.appendChild(div);
             });
         }
 
-        async function loadKaryawan() {
-            try {
-                const resp = await fetch(WEB_APP_URL);
-                const data = await resp.json();
-                if (data.karyawan && data.karyawan.length > 0) {
-                    daftarKaryawan = data.karyawan;
-                } else {
-                    daftarKaryawan = [
-                        "Gonzaga Gogo Silalahi", "Yuliana Sventy Yasmine", "Rinaldo Pardomuan Sinaga",
-                        "Agnia Sasa Fadilah", "Destya Marsya Susanti", "Reza Virgi herviana",
-                        "Suci Muptiah Ajahra", "Regi Ganda Permana", "Fiki Sugiana",
-                        "Muhamad Rifai Sani", "Rizki Ramdani", "Della Adelia Zahra",
-                        "Mohamad Rafli Bahtiar", "Dhika Andara", "Ridwan Hasan Maulana",
-                        "Muhamad Gilang Fikriansyah", "Yogi Ginanjar", "Fathan Muhamad Fauzan",
-                        "Muhamad Rafly Firdaus", "Mochamad Rizal Hanapi", "Raiyatria Ardhi Kalam",
-                        "Albert christian Simanungkalit", "Julian Hardi Winata", "Abdillah Azka Al-fathir",
-                        "Kenna Ida Febriana Putri", "Yuga Redisa Maulana", "Zulfa Rahmani",
-                        "Muhammad Fathir Firmansyah", "Savvynka Nashwa Mikaila", "George Pergion Nainggolan",
-                        "Bagus Six Leo Sun Sianturi", "Kornel Adrian", "Ririn Nur Aini",
-                        "Fiqri Mauludin", "Nabila Jessica Iriawan", "Rangga Purnama",
-                        "Tazkya Nurfadila H.S Putri", "Tasya Lutfiah Nur Azizah", "Reva Efendi",
-                        "Eben Haizer", "Selvianti Amalia", "Prabu Hebrian Dewangga",
-                        "Pamungkas Chris Hermanto", "Muhamad Fijan Natinnaim Fauzi", "Irfan Nurdiansyah"
-                    ];
-                }
-            } catch (e) {
-                console.error('Gagal load karyawan:', e);
-                daftarKaryawan = ["Yuliana Sventy Yasmine", "Rinaldo Pardomuan Sinaga", "Agnia Sasa Fadilah"];
-            }
-            renderKaryawanList(daftarKaryawan);
-        }
-
         searchKaryawan.addEventListener('input', function() {
             const q = this.value.toLowerCase().trim();
-            const filtered = daftarKaryawan.filter(n => n.toLowerCase().includes(q));
+            const filtered = daftarKaryawan.filter(item =>
+                (item.namaSebenarnya || item.namaAlat).toLowerCase().includes(q)
+            );
             renderKaryawanList(filtered);
             if (q === '') selectedKaryawan = null;
         });
